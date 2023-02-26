@@ -88,7 +88,28 @@ def _report_figure(dfs: Union[pd.DataFrame,Dict[str,pd.DataFrame]]) -> Tuple[lis
     :param df:
     :return:
     """
-    report_df,drawdown=_report_data(df)
+    dd_max_start,dd_max_end,dd_ex_max_start,dd_ex_max_end=0,0,0,0
+    _temp_fill_args = {"fill": "tozeroy", "mode": "lines+markers"}
+    _column_row_col_dict = []
+    for exp_name,result_df in dfs:
+        report_df,drawdown=_report_data(result_df)
+        _column_row_col_dict.append([
+            ("cum_bench", dict(row=1, col=1)),
+            ("cum_return_wo_cost", dict(row=1, col=1)),
+            ("cum_return_w_cost", dict(row=1, col=1)),
+
+            ("return_wo_mdd", dict(row=2, col=1, graph_kwargs=_temp_fill_args)),
+            ("return_w_cost_mdd", dict(row=3, col=1, graph_kwargs=_temp_fill_args)),
+
+            ("cum_ex_return_wo_cost", dict(row=4, col=1)),
+            ("cum_ex_return_w_cost", dict(row=4, col=1)),
+            
+            ("turnover", dict(row=5, col=1)),
+            ("cum_ex_return_w_cost_mdd", dict(row=6, col=1, graph_kwargs=_temp_fill_args)),
+            ("cum_ex_return_wo_cost_mdd", dict(row=7, col=1, graph_kwargs=_temp_fill_args)),
+        ])
+
+
     _subplot_layout = dict()
     for i in range(1, 8):
         # yaxis
@@ -130,26 +151,6 @@ def _report_figure(dfs: Union[pd.DataFrame,Dict[str,pd.DataFrame]]) -> Tuple[lis
             },
         ],
     )
-
-    _default_kind_map = dict(kind="ScatterGraph", kwargs={"mode": "lines+markers"})
-    # Create figure
-    _temp_fill_args = {"fill": "tozeroy", "mode": "lines+markers"}
-    _column_row_col_dict = [
-        ("cum_bench", dict(row=1, col=1)),
-        ("cum_return_wo_cost", dict(row=1, col=1)),
-        ("cum_return_w_cost", dict(row=1, col=1)),
-
-        ("return_wo_mdd", dict(row=2, col=1, graph_kwargs=_temp_fill_args)),
-        ("return_w_cost_mdd", dict(row=3, col=1, graph_kwargs=_temp_fill_args)),
-
-        ("cum_ex_return_wo_cost", dict(row=4, col=1)),
-        ("cum_ex_return_w_cost", dict(row=4, col=1)),
-        
-        ("turnover", dict(row=5, col=1)),
-        ("cum_ex_return_w_cost_mdd", dict(row=6, col=1, graph_kwargs=_temp_fill_args)),
-        ("cum_ex_return_wo_cost_mdd", dict(row=7, col=1, graph_kwargs=_temp_fill_args)),
-    ]
-
     _subplot_kwargs = dict(
         shared_xaxes=True,
         vertical_spacing=0.01,
@@ -158,6 +159,7 @@ def _report_figure(dfs: Union[pd.DataFrame,Dict[str,pd.DataFrame]]) -> Tuple[lis
         row_width=[1, 1, 1, 3, 1, 1, 3],
         print_grid=False,
     )
+    _default_kind_map = dict(kind="ScatterGraph", kwargs={"mode": "lines+markers"})
     figure = SubplotsGraph(
         df=report_df,
         layout=_layout_style,
