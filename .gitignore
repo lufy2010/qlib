@@ -48,3 +48,5 @@ tags
 
 ./pretrain
 .idea/
+examples/tutorial/nohup.out
+examples/tsai/data

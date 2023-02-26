@@ -162,7 +162,7 @@ class Alpha158(DataHandlerLP):
             "class": "QlibDataLoader",
             "kwargs": {
                 "config": {
-                    "feature": self.get_feature_config(),
+                    "feature": self.get_feature_config(kwargs.pop("feature",None)),
                     "label": kwargs.pop("label", self.get_label_config()),
                 },
                 "filter_pipe": filter_pipe,
@@ -181,8 +181,8 @@ class Alpha158(DataHandlerLP):
             **kwargs
         )
 
-    def get_feature_config(self):
-        conf = {
+    def get_feature_config(self,conf):
+        conf = conf or {
             "kbar": {},
             "price": {
                 "windows": [0],

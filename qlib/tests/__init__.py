@@ -21,7 +21,7 @@ class TestAutoData(unittest.TestCase):
     provider_uri_1min = "~/.qlib/qlib_data/cn_data_1min"
 
     @classmethod
-    def setUpClass(cls, enable_1d_type="simple", enable_1min=False) -> None:
+    def setUpClass(cls, enable_1d_type="full", enable_1min=False) -> None:
         # use default data
 
         if enable_1d_type == "simple":

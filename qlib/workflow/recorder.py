@@ -349,7 +349,7 @@ class MLflowRecorder(Recorder):
         # Maybe we can make this feature more general.
         self._log_uncommitted_code()
 
-        self.log_params(**{"cmd-sys.argv": " ".join(sys.argv)})  # log the command to produce current experiment
+        #self.log_params(**{"cmd-sys.argv": " ".join(sys.argv)})  # log the command to produce current experiment
         self.log_params(
             **{k: v for k, v in os.environ.items() if k.startswith("_QLIB_")}
         )  # Log necessary environment variables

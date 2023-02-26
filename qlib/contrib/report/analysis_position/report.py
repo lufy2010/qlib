@@ -2,6 +2,7 @@
 # Licensed under the MIT License.
 
 import pandas as pd
+from typing import Tuple,Union,Dict
 
 from ..graph import SubplotsGraph, BaseGraph
 
@@ -62,15 +63,8 @@ def _calculate_report_data(df: pd.DataFrame) -> pd.DataFrame:
     report_df.index.names = index_names
     return report_df
 
-
-def _report_figure(df: pd.DataFrame) -> [list, tuple]:
-    """
-
-    :param df:
-    :return:
-    """
-
-    # Get data
+def _report_data(df: pd.DataFrame) -> Tuple[pd.DataFrame, dict]:
+  # Get data
     report_df = _calculate_report_data(df)
 
     # Maximum Drawdown
@@ -85,23 +79,16 @@ def _report_figure(df: pd.DataFrame) -> [list, tuple]:
     _temp_df.set_index(index_name, inplace=True)
     _temp_df.iloc[0] = 0
     report_df = _temp_df
+    return (report_df,{"max_start":max_start_date,"max_end":max_end_date,
+                       "ex_max_start":ex_max_start_date,"ex_max_end":ex_max_end_date})
 
-    # Create figure
-    _default_kind_map = dict(kind="ScatterGraph", kwargs={"mode": "lines+markers"})
-    _temp_fill_args = {"fill": "tozeroy", "mode": "lines+markers"}
-    _column_row_col_dict = [
-        ("cum_bench", dict(row=1, col=1)),
-        ("cum_return_wo_cost", dict(row=1, col=1)),
-        ("cum_return_w_cost", dict(row=1, col=1)),
-        ("return_wo_mdd", dict(row=2, col=1, graph_kwargs=_temp_fill_args)),
-        ("return_w_cost_mdd", dict(row=3, col=1, graph_kwargs=_temp_fill_args)),
-        ("cum_ex_return_wo_cost", dict(row=4, col=1)),
-        ("cum_ex_return_w_cost", dict(row=4, col=1)),
-        ("turnover", dict(row=5, col=1)),
-        ("cum_ex_return_w_cost_mdd", dict(row=6, col=1, graph_kwargs=_temp_fill_args)),
-        ("cum_ex_return_wo_cost_mdd", dict(row=7, col=1, graph_kwargs=_temp_fill_args)),
-    ]
+def _report_figure(dfs: Union[pd.DataFrame,Dict[str,pd.DataFrame]]) -> Tuple[list, tuple]:
+    """
 
+    :param df:
+    :return:
+    """
+    report_df,drawdown=_report_data(df)
     _subplot_layout = dict()
     for i in range(1, 8):
         # yaxis
@@ -117,9 +104,9 @@ def _report_figure(df: pd.DataFrame) -> [list, tuple]:
                 "type": "rect",
                 "xref": "x",
                 "yref": "paper",
-                "x0": max_start_date,
+                "x0": drawdown["max_start"],
                 "y0": 0.55,
-                "x1": max_end_date,
+                "x1": drawdown["max_end"],
                 "y1": 1,
                 "fillcolor": "#d3d3d3",
                 "opacity": 0.3,
@@ -131,9 +118,9 @@ def _report_figure(df: pd.DataFrame) -> [list, tuple]:
                 "type": "rect",
                 "xref": "x",
                 "yref": "paper",
-                "x0": ex_max_start_date,
+                "x0": drawdown["ex_max_start"],
                 "y0": 0,
-                "x1": ex_max_end_date,
+                "x1": drawdown["ex_max_end"],
                 "y1": 0.55,
                 "fillcolor": "#d3d3d3",
                 "opacity": 0.3,
@@ -143,6 +130,25 @@ def _report_figure(df: pd.DataFrame) -> [list, tuple]:
             },
         ],
     )
+
+    _default_kind_map = dict(kind="ScatterGraph", kwargs={"mode": "lines+markers"})
+    # Create figure
+    _temp_fill_args = {"fill": "tozeroy", "mode": "lines+markers"}
+    _column_row_col_dict = [
+        ("cum_bench", dict(row=1, col=1)),
+        ("cum_return_wo_cost", dict(row=1, col=1)),
+        ("cum_return_w_cost", dict(row=1, col=1)),
+
+        ("return_wo_mdd", dict(row=2, col=1, graph_kwargs=_temp_fill_args)),
+        ("return_w_cost_mdd", dict(row=3, col=1, graph_kwargs=_temp_fill_args)),
+
+        ("cum_ex_return_wo_cost", dict(row=4, col=1)),
+        ("cum_ex_return_w_cost", dict(row=4, col=1)),
+        
+        ("turnover", dict(row=5, col=1)),
+        ("cum_ex_return_w_cost_mdd", dict(row=6, col=1, graph_kwargs=_temp_fill_args)),
+        ("cum_ex_return_wo_cost_mdd", dict(row=7, col=1, graph_kwargs=_temp_fill_args)),
+    ]
 
     _subplot_kwargs = dict(
         shared_xaxes=True,
@@ -163,7 +169,8 @@ def _report_figure(df: pd.DataFrame) -> [list, tuple]:
     return (figure,)
 
 
-def report_graph(report_df: pd.DataFrame, show_notebook: bool = True) -> [list, tuple]:
+def report_graph( report_dfs: Union[pd.DataFrame,Dict[str,pd.DataFrame]], 
+                 show_notebook: bool = True) -> Tuple[list, tuple]:
     """display backtest report
 
         Example:
