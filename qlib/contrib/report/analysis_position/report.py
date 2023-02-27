@@ -2,7 +2,7 @@
 # Licensed under the MIT License.
 
 import pandas as pd
-from typing import Tuple,Union,Dict
+from typing import Tuple, Union, Dict
 
 from ..graph import SubplotsGraph, BaseGraph
 
@@ -63,8 +63,9 @@ def _calculate_report_data(df: pd.DataFrame) -> pd.DataFrame:
     report_df.index.names = index_names
     return report_df
 
+
 def _report_data(df: pd.DataFrame) -> Tuple[pd.DataFrame, dict]:
-  # Get data
+    # Get data
     report_df = _calculate_report_data(df)
 
     # Maximum Drawdown
@@ -79,36 +80,53 @@ def _report_data(df: pd.DataFrame) -> Tuple[pd.DataFrame, dict]:
     _temp_df.set_index(index_name, inplace=True)
     _temp_df.iloc[0] = 0
     report_df = _temp_df
-    return (report_df,{"max_start":max_start_date,"max_end":max_end_date,
-                       "ex_max_start":ex_max_start_date,"ex_max_end":ex_max_end_date})
+    return (report_df, {
+        "max_start": max_start_date,
+        "max_end": max_end_date,
+        "ex_max_start": ex_max_start_date,
+        "ex_max_end": ex_max_end_date
+    })
 
-def _report_figure(dfs: Union[pd.DataFrame,Dict[str,pd.DataFrame]]) -> Tuple[list, tuple]:
+
+def _report_figure(df_map: Dict[str, pd.DataFrame]) -> Tuple[list, tuple]:
     """
 
     :param df:
     :return:
     """
-    dd_max_start,dd_max_end,dd_ex_max_start,dd_ex_max_end=0,0,0,0
+
+    dd_max_start, dd_max_end, dd_ex_max_start, dd_ex_max_end = "", "", "", ""
     _temp_fill_args = {"fill": "tozeroy", "mode": "lines+markers"}
     _column_row_col_dict = []
-    for exp_name,result_df in dfs:
-        report_df,drawdown=_report_data(result_df)
-        _column_row_col_dict.append([
-            ("cum_bench", dict(row=1, col=1)),
-            ("cum_return_wo_cost", dict(row=1, col=1)),
-            ("cum_return_w_cost", dict(row=1, col=1)),
 
-            ("return_wo_mdd", dict(row=2, col=1, graph_kwargs=_temp_fill_args)),
-            ("return_w_cost_mdd", dict(row=3, col=1, graph_kwargs=_temp_fill_args)),
+    merged_df = None
+    for name, df in df_map.items():
+        if name:
+            name = "_(" + name + ")"
 
-            ("cum_ex_return_wo_cost", dict(row=4, col=1)),
-            ("cum_ex_return_w_cost", dict(row=4, col=1)),
-            
-            ("turnover", dict(row=5, col=1)),
-            ("cum_ex_return_w_cost_mdd", dict(row=6, col=1, graph_kwargs=_temp_fill_args)),
-            ("cum_ex_return_wo_cost_mdd", dict(row=7, col=1, graph_kwargs=_temp_fill_args)),
+        report_df, drawdown = _report_data(df)
+        report_df.columns = report_df.columns + name
+        if merged_df:
+            merged_df = pd.merge(merged_df, report_df, left_index=True, right_index=True)
+        else:
+            merged_df = report_df
+        dd_max_start = max(dd_max_start, drawdown["max_start"])
+        dd_max_end = max(dd_max_end, drawdown["max_end"])
+        dd_ex_max_start = max(dd_ex_max_start, drawdown["ex_max_start"])
+        dd_ex_max_end = max(dd_ex_max_end, drawdown["ex_max_end"])
+
+        _column_row_col_dict.extend([
+            ("cum_bench" + name, dict(row=1, col=1)),
+            ("cum_return_wo_cost" + name, dict(row=1, col=1)),
+            ("cum_return_w_cost" + name, dict(row=1, col=1)),
+            ("return_wo_mdd" + name, dict(row=2, col=1, graph_kwargs=_temp_fill_args)),
+            ("return_w_cost_mdd" + name, dict(row=3, col=1, graph_kwargs=_temp_fill_args)),
+            ("cum_ex_return_wo_cost" + name, dict(row=4, col=1)),
+            ("cum_ex_return_w_cost" + name, dict(row=4, col=1)),
+            ("turnover" + name, dict(row=5, col=1)),
+            ("cum_ex_return_w_cost_mdd" + name, dict(row=6, col=1, graph_kwargs=_temp_fill_args)),
+            ("cum_ex_return_wo_cost_mdd" + name, dict(row=7, col=1, graph_kwargs=_temp_fill_args)),
         ])
-
 
     _subplot_layout = dict()
     for i in range(1, 8):
@@ -125,9 +143,9 @@ def _report_figure(dfs: Union[pd.DataFrame,Dict[str,pd.DataFrame]]) -> Tuple[lis
                 "type": "rect",
                 "xref": "x",
                 "yref": "paper",
-                "x0": drawdown["max_start"],
+                "x0": dd_max_start,
                 "y0": 0.55,
-                "x1": drawdown["max_end"],
+                "x1": dd_max_end,
                 "y1": 1,
                 "fillcolor": "#d3d3d3",
                 "opacity": 0.3,
@@ -139,9 +157,9 @@ def _report_figure(dfs: Union[pd.DataFrame,Dict[str,pd.DataFrame]]) -> Tuple[lis
                 "type": "rect",
                 "xref": "x",
                 "yref": "paper",
-                "x0": drawdown["ex_max_start"],
+                "x0": dd_ex_max_start,
                 "y0": 0,
-                "x1": drawdown["ex_max_end"],
+                "x1": dd_ex_max_end,
                 "y1": 0.55,
                 "fillcolor": "#d3d3d3",
                 "opacity": 0.3,
@@ -171,7 +189,7 @@ def _report_figure(dfs: Union[pd.DataFrame,Dict[str,pd.DataFrame]]) -> Tuple[lis
     return (figure,)
 
 
-def report_graph( report_dfs: Union[pd.DataFrame,Dict[str,pd.DataFrame]], 
+def report_graph(report_df: Union[pd.DataFrame, Dict[str, pd.DataFrame]],
                  show_notebook: bool = True) -> Tuple[list, tuple]:
     """display backtest report
 
@@ -249,8 +267,14 @@ def report_graph( report_dfs: Union[pd.DataFrame,Dict[str,pd.DataFrame]],
     :param show_notebook: whether to display graphics in notebook, the default is **True**.
     :return: if show_notebook is True, display in notebook; else return **plotly.graph_objs.Figure** list.
     """
-    report_df = report_df.copy()
-    fig_list = _report_figure(report_df)
+    df_map_copy = {}
+    if isinstance(report_df, pd.DataFrame):
+        df_map_copy[""] = report_df.copy()
+    else:
+        for name, df in report_df.items():
+            df_map_copy[name] = df.copy()
+
+    fig_list = _report_figure(df_map_copy)
     if show_notebook:
         BaseGraph.show_graph_in_notebook(fig_list)
     else:
