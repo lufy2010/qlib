@@ -117,7 +117,7 @@ def get_all_folders(models, exclude) -> dict:
 
 
 # function to get all the files under the model folder
-def get_all_files(folder_path, dataset, universe="") -> (str, str):
+def get_all_files(folder_path, dataset, universe="") -> tuple(str, str):
     if universe != "":
         universe = f"_{universe}"
     yaml_path = str(Path(f"{folder_path}") / f"*{dataset}{universe}.yaml")
