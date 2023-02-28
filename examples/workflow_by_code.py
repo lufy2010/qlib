@@ -16,16 +16,7 @@ from qlib.tests.data import GetData
 from qlib.tests.config import CSI300_BENCH, CSI300_GBDT_TASK
 
 
-if __name__ == "__main__":
-
-    # use default data
-    provider_uri = "~/.qlib/qlib_data/cn_data"  # target_dir
-    GetData().qlib_data(target_dir=provider_uri, region=REG_CN, exists_skip=True)
-    qlib.init(provider_uri=provider_uri, region=REG_CN)
-
-    model = init_instance_by_config(CSI300_GBDT_TASK["model"])
-    dataset = init_instance_by_config(CSI300_GBDT_TASK["dataset"])
-
+def port_analysis(dataset, model, hold_thresh):
     port_analysis_config = {
         "executor": {
             "class": "SimulatorExecutor",
@@ -42,6 +33,7 @@ if __name__ == "__main__":
                 "signal": (model, dataset),
                 "topk": 50,
                 "n_drop": 5,
+                "hold_thresh": hold_thresh,
             },
         },
         "backtest": {
@@ -59,28 +51,47 @@ if __name__ == "__main__":
             },
         },
     }
-
-    # NOTE: This line is optional
-    # It demonstrates that the dataset can be used standalone.
-    example_df = dataset.prepare("train")
-    print(example_df.head())
-
-    # start exp
-    with R.start(experiment_name="workflow"):
+    # backtest
+    with R.start(experiment_name="experiment"):
         R.log_params(**flatten_dict(CSI300_GBDT_TASK))
         model.fit(dataset)
-        R.save_objects(**{"params.pkl": model})
-
         # prediction
         recorder = R.get_recorder()
         sr = SignalRecord(model, dataset, recorder)
         sr.generate()
-
-        # Signal Analysis
-        sar = SigAnaRecord(recorder)
-        sar.generate()
-
-        # backtest. If users want to use backtest based on their own prediction,
-        # please refer to https://qlib.readthedocs.io/en/latest/component/recorder.html#record-template.
         par = PortAnaRecord(recorder, port_analysis_config, "day")
         par.generate()
+    return recorder.id
+
+
+def train_and_backtest():
+    # train
+    with R.start(experiment_name="experiment"):
+        R.log_params(**flatten_dict(CSI300_GBDT_TASK))
+        model.fit(dataset)
+
+    rid1 = port_analysis(dataset, model, 1)
+    rid20 = port_analysis(dataset, model, 20)
+    print(rid1)
+    print(rid20)
+    return [rid1, rid20]
+
+
+if __name__ == "__main__":
+
+    # use default data
+    provider_uri = "~/.qlib/qlib_data/cn_data"  # target_dir
+    GetData().qlib_data(target_dir=provider_uri, region=REG_CN, exists_skip=True)
+    qlib.init(provider_uri=provider_uri, region=REG_CN)
+
+    #model = init_instance_by_config(CSI300_GBDT_TASK["model"])
+    #dataset = init_instance_by_config(CSI300_GBDT_TASK["dataset"])
+
+    #rid_list = train_and_backtest()
+    rid_list = ["e038f77a14b14dcda091495c60fd2794","db1fb2ddaada4e30aa6aec1bda08f966"]
+
+    report_df_map = {}
+    for idx, rid in enumerate(rid_list):
+        recorder = R.get_recorder(recorder_id=rid, experiment_name="experiment")
+        report_df = recorder.load_object("portfolio_analysis/report_normal_1day.pkl")
+        report_df_map[f"{idx}"] = report_df

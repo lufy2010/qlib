@@ -99,17 +99,19 @@ def _report_figure(df_map: Dict[str, pd.DataFrame]) -> Tuple[list, tuple]:
     _temp_fill_args = {"fill": "tozeroy", "mode": "lines+markers"}
     _column_row_col_dict = []
 
-    merged_df = None
+    merged_df = pd.DataFrame()
     for name, df in df_map.items():
         if name:
             name = "_(" + name + ")"
 
         report_df, drawdown = _report_data(df)
         report_df.columns = report_df.columns + name
-        if merged_df:
-            merged_df = pd.merge(merged_df, report_df, left_index=True, right_index=True)
-        else:
+
+        if merged_df.empty:
             merged_df = report_df
+        else:
+            merged_df =  pd.merge( merged_df, report_df, left_index=True, right_index=True)
+
         dd_max_start = max(dd_max_start, drawdown["max_start"])
         dd_max_end = max(dd_max_end, drawdown["max_end"])
         dd_ex_max_start = max(dd_ex_max_start, drawdown["ex_max_start"])
@@ -179,7 +181,7 @@ def _report_figure(df_map: Dict[str, pd.DataFrame]) -> Tuple[list, tuple]:
     )
     _default_kind_map = dict(kind="ScatterGraph", kwargs={"mode": "lines+markers"})
     figure = SubplotsGraph(
-        df=report_df,
+        df=merged_df,
         layout=_layout_style,
         sub_graph_data=_column_row_col_dict,
         subplots_kwargs=_subplot_kwargs,
